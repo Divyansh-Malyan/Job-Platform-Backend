@@ -185,15 +185,28 @@ export const getRecruiterJobs = async (req, res) => {
     // Get only this company's jobs
     const jobsResult = await pool.query(
       `
-      SELECT
-        jp.*,
-        c.company_name,
-        c.website
-      FROM "Job_Posting" jp
-      JOIN "Company" c
-      ON jp.comp_id = c.comp_id
-      WHERE jp.comp_id = $1
-      ORDER BY jp.created_at DESC
+     SELECT
+    jp.*,
+    c.company_name,
+    c.website,
+    COUNT(a.id) AS applicants
+
+FROM "Job_Posting" jp
+
+JOIN "Company" c
+ON jp.comp_id = c.comp_id
+
+LEFT JOIN "Applications" a
+ON a.job_id = jp.id
+
+WHERE jp.comp_id = $1
+
+GROUP BY
+    jp.id,
+    c.company_name,
+    c.website
+
+ORDER BY jp.created_at DESC
       `,
       [companyId]
     );
@@ -346,5 +359,99 @@ export const updateJob = async (req, res) => {
       message: error.message,
     });
 
+  }
+};
+
+export const getApplicantsByJob = async (req, res) => {
+  try {
+
+    const { jobId } = req.params;
+
+    const result = await pool.query(
+      `
+      SELECT
+        a.id AS application_id,
+        a.status,
+        a.created_at,
+
+        s.id AS student_id,
+        s.name,
+        s.resume_url,
+        s.headline,
+        s.city,
+        s.college,
+
+        u.email
+
+      FROM "Applications" a
+
+      JOIN "Students" s
+      ON a.student_id = s.user_student_id
+
+      JOIN "User" u
+      ON a.student_id = u.user_id
+
+      WHERE a.job_id = $1
+
+      ORDER BY a.created_at DESC
+      `,
+      [jobId]
+    );
+
+    res.status(200).json({
+      success: true,
+      applicants: result.rows,
+    });
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+
+  }
+};
+
+export const getRecruiterCompany = async (
+  req,
+  res
+) => {
+  try {
+    const { recruiterId } = req.params;
+
+    const result = await pool.query(
+      `
+      SELECT
+        c.company_name,
+        c.website
+      FROM "Recruiters" r
+      INNER JOIN "Company" c
+      ON r.company_id = c.comp_id
+      WHERE r.id = $1
+      `,
+      [recruiterId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Company not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      company: result.rows[0],
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };

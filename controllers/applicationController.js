@@ -95,3 +95,107 @@ export const checkApplication = async (req, res) => {
   
     }
   };
+
+  export const updateApplicationStatus = async (req, res) => {
+    try {
+  
+      const { applicationId } = req.params;
+      const { status } = req.body;
+  
+      const applicationResult = await pool.query(
+        `
+        SELECT *
+        FROM "Applications"
+        WHERE id = $1
+        `,
+        [applicationId]
+      );
+  
+      if (applicationResult.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Application not found"
+        });
+      }
+  
+      const application = applicationResult.rows[0];
+  
+      // Prevent changing final decisions
+  
+      if (
+        application.status === "Accepted" ||
+        application.status === "Rejected"
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: `Application already ${application.status}`
+        });
+      }
+  
+      await pool.query(
+        `
+        UPDATE "Applications"
+        SET status = $1
+        WHERE id = $2
+        `,
+        [status, applicationId]
+      );
+  
+      // Create Notification
+  
+      let title = "";
+      let message = "";
+  
+      if (status === "Accepted") {
+        title = "Application Accepted";
+        message =
+          "Congratulations! Your application has been accepted.";
+      }
+  
+      if (status === "Rejected") {
+        title = "Application Rejected";
+        message =
+          "Your application was not selected.";
+      }
+  
+      if (status === "Shortlisted") {
+        title = "Application Shortlisted";
+        message =
+          "Your profile has been shortlisted by the recruiter.";
+      }
+  
+      if (title) {
+        await pool.query(
+          `
+          INSERT INTO "Notifications"
+          (
+            user_id,
+            title,
+            message
+          )
+          VALUES ($1,$2,$3)
+          `,
+          [
+            application.student_id,
+            title,
+            message
+          ]
+        );
+      }
+  
+      res.status(200).json({
+        success: true,
+        message: "Application status updated"
+      });
+  
+    } catch (error) {
+  
+      console.error(error);
+  
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
+  
+    }
+  };

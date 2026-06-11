@@ -5,8 +5,7 @@ import jobRoutes from "./routes/jobRoutes.js";
 import applicationRoutes from "./routes/applicationRoutes.js";
 import studentRoutes from "./routes/studentRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
-
-
+import notificationRoutes from "./routes/notificationRoutes.js";
 
 const app = express();
 
@@ -17,6 +16,7 @@ app.use("/jobs", jobRoutes);
 app.use("/applications", applicationRoutes);
 app.use("/students", studentRoutes);
 app.use("/dashboard", dashboardRoutes);
+app.use("/notifications", notificationRoutes);
 
 
 app.get("/", async (req, res) => {
