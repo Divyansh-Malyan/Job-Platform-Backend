@@ -11,12 +11,17 @@ import recruiterRoutes from "./routes/recruiterRoutes.js";
 import companyRoutes from "./routes/companyRoutes.js";
 
 
-
-
-
 const app = express();
 
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "https://your-app.vercel.app"
+    ],
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 app.use("/jobs", jobRoutes);
@@ -42,6 +47,8 @@ app.get("/", async (req, res) => {
   }
 });
 
-app.listen(8080, () => {
-  console.log("Server running on port 8080");
+const PORT = process.env.PORT || 8080;
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
