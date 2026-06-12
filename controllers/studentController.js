@@ -174,30 +174,36 @@ export const updateStudentProfile = async (
     const { userId } = req.params;
 
     const data = req.body;
+    console.log("PHOTO URL:", data.profilePhotoUrl);
+    console.log("RESUME URL:", data.resumeUrl);
+
+    // ---------------- STUDENT INFO ----------------
 
     await pool.query(
       `
-      UPDATE "Students"
-      SET
-        name = $1,
-        headline = $2,
-        phone = $3,
-        city = $4,
-        country = $5,
-        course = $6,
-        college = $7,
-        cgpa = $8,
-        about = $9,
-        github = $10,
-        linkedin = $11,
-        portfolio = $12,
-        leetcode = $13,
-        open_to_work = $14,
-        preferred_job_type = $15,
-        preferred_location = $16,
-        work_mode = $17
-      WHERE user_student_id = $18
-      `,
+  UPDATE "Students"
+  SET
+    name = $1,
+    headline = $2,
+    phone = $3,
+    city = $4,
+    country = $5,
+    course = $6,
+    college = $7,
+    cgpa = $8,
+    about = $9,
+    github = $10,
+    linkedin = $11,
+    portfolio = $12,
+    leetcode = $13,
+    open_to_work = $14,
+    preferred_job_type = $15,
+    preferred_location = $16,
+    work_mode = $17,
+    profile_photo = COALESCE($18, profile_photo),
+    resume_url = COALESCE($19, resume_url)
+  WHERE user_student_id = $20
+  `,
       [
         data.name,
         data.headline,
@@ -216,16 +222,175 @@ export const updateStudentProfile = async (
         data.preferredJobType,
         data.preferredLocation,
         data.workMode,
+        data.profilePhotoUrl,
+        data.resumeUrl,
         userId
       ]
     );
 
+    const updatedStudent = await pool.query(
+      `
+  SELECT
+    profile_photo,
+    resume_url
+  FROM "Students"
+  WHERE user_student_id = $1
+  `,
+      [userId]
+    );
+
+    console.log(
+      "Updated URLs:",
+      updatedStudent.rows[0]
+    );
+
+    // ---------------- SKILLS ----------------
+
+    console.log("Projects Received:");
+    console.log(data.projects);
+    await pool.query(
+      `
+      DELETE FROM "Student_Skills"
+      WHERE student_skill_id = $1
+      `,
+      [userId]
+    );
+
+    const skillsArray = data.skills
+      ?.split(",")
+      .map((skill) => skill.trim())
+      .filter((skill) => skill.length > 0);
+
+    if (skillsArray?.length > 0) {
+
+      for (const skill of skillsArray) {
+
+        await pool.query(
+          `
+          INSERT INTO "Student_Skills"
+          (
+            student_skill_id,
+            name
+          )
+          VALUES ($1, $2)
+          `,
+          [
+            userId,
+            skill
+          ]
+        );
+
+      }
+
+    }
+
+    // ---------------- PROJECTS ----------------
+
+    await pool.query(
+      `
+  DELETE FROM "Student_Projects"
+  WHERE student_id = $1
+  `,
+      [userId]
+    );
+
+    if (data.projects?.length > 0) {
+
+      for (const project of data.projects) {
+
+        if (!project.name?.trim()) continue;
+
+        await pool.query(
+          `
+      INSERT INTO "Student_Projects"
+      (
+        project_name,
+        tech_stack,
+        github_link,
+        demo_link,
+        description,
+        student_id
+      )
+      VALUES
+      (
+        $1,
+        $2,
+        $3,
+        $4,
+        $5,
+        $6
+      )
+      `,
+          [
+            project.name,
+            project.techStack,
+            project.github,
+            project.demo,
+            project.description,
+            userId
+          ]
+        );
+
+      }
+
+    }
+
+    // ---------------- EXPERIENCE ----------------
+
+    await pool.query(
+      `
+  DELETE FROM "Student_Experience"
+  WHERE student_id = $1
+  `,
+      [userId]
+    );
+
+    if (data.experiences?.length > 0) {
+
+      for (const exp of data.experiences) {
+
+        if (!exp.company?.trim()) continue;
+
+        await pool.query(
+          `
+      INSERT INTO "Student_Experience"
+      (
+        company_name,
+        role,
+        duration,
+        about,
+        student_id
+      )
+      VALUES
+      (
+        $1,
+        $2,
+        $3,
+        $4,
+        $5
+      )
+      `,
+          [
+            exp.company,
+            exp.role,
+            exp.duration,
+            exp.description,
+            userId
+          ]
+        );
+
+      }
+
+    }
+
     return res.status(200).json({
-      success: true
+      success: true,
+      message: "Profile updated successfully"
     });
 
   } catch (error) {
 
+    console.error("UPDATE PROFILE ERROR:");
     console.error(error);
 
     return res.status(500).json({
@@ -234,4 +399,6 @@ export const updateStudentProfile = async (
     });
 
   }
+
+
 };
