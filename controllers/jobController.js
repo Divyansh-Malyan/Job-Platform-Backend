@@ -17,7 +17,6 @@ export const createJob = async (req, res) => {
       status,
     } = req.body;
 
-    // Get recruiter's company
     const recruiterResult = await pool.query(
       `
       SELECT company_id
@@ -36,7 +35,6 @@ export const createJob = async (req, res) => {
 
     const comp_id = recruiterResult.rows[0].company_id;
 
-    // Create job
     const result = await pool.query(
       `
       INSERT INTO "Job_Posting"
@@ -98,7 +96,11 @@ export const getJobs = async (req, res) => {
       SELECT
         jp.*,
         c.company_name,
-        c.website
+        c.website,
+        c.logo_url,
+        c.industry,
+        c.location,
+        c.description
       FROM "Job_Posting" jp
       JOIN "Company" c
       ON jp.comp_id = c.comp_id
@@ -128,7 +130,11 @@ export const getJobById = async (req, res) => {
       SELECT
         jp.*,
         c.company_name,
-        c.website
+        c.website,
+        c.logo_url,
+        c.industry,
+        c.location,
+        c.description
       FROM "Job_Posting" jp
       JOIN "Company" c
       ON jp.comp_id = c.comp_id
@@ -162,7 +168,6 @@ export const getRecruiterJobs = async (req, res) => {
   try {
     const { recruiterId } = req.params;
 
-    // Find recruiter's company
     const recruiterResult = await pool.query(
       `
       SELECT company_id
@@ -182,31 +187,36 @@ export const getRecruiterJobs = async (req, res) => {
     const companyId =
       recruiterResult.rows[0].company_id;
 
-    // Get only this company's jobs
     const jobsResult = await pool.query(
       `
-     SELECT
-    jp.*,
-    c.company_name,
-    c.website,
-    COUNT(a.id) AS applicants
+      SELECT
+        jp.*,
+        c.company_name,
+        c.website,
+        c.logo_url,
+        c.industry,
+        c.location,
+        COUNT(a.id) AS applicants
 
-FROM "Job_Posting" jp
+      FROM "Job_Posting" jp
 
-JOIN "Company" c
-ON jp.comp_id = c.comp_id
+      JOIN "Company" c
+      ON jp.comp_id = c.comp_id
 
-LEFT JOIN "Applications" a
-ON a.job_id = jp.id
+      LEFT JOIN "Applications" a
+      ON a.job_id = jp.id
 
-WHERE jp.comp_id = $1
+      WHERE jp.comp_id = $1
 
-GROUP BY
-    jp.id,
-    c.company_name,
-    c.website
+      GROUP BY
+        jp.id,
+        c.company_name,
+        c.website,
+        c.logo_url,
+        c.industry,
+        c.location
 
-ORDER BY jp.created_at DESC
+      ORDER BY jp.created_at DESC
       `,
       [companyId]
     );
@@ -251,20 +261,16 @@ export const updateJobStatus = async (req, res) => {
       success: true,
       job: result.rows[0],
     });
-
   } catch (error) {
-
     res.status(500).json({
       success: false,
       message: error.message,
     });
-
   }
 };
 
 export const deleteJob = async (req, res) => {
   try {
-
     const { id } = req.params;
 
     const result = await pool.query(
@@ -287,14 +293,11 @@ export const deleteJob = async (req, res) => {
       success: true,
       message: "Job deleted",
     });
-
   } catch (error) {
-
     res.status(500).json({
       success: false,
       message: error.message,
     });
-
   }
 };
 
@@ -351,20 +354,16 @@ export const updateJob = async (req, res) => {
       success: true,
       job: result.rows[0],
     });
-
   } catch (error) {
-
     res.status(500).json({
       success: false,
       message: error.message,
     });
-
   }
 };
 
 export const getApplicantsByJob = async (req, res) => {
   try {
-
     const { jobId } = req.params;
 
     const result = await pool.query(
@@ -402,23 +401,17 @@ export const getApplicantsByJob = async (req, res) => {
       success: true,
       applicants: result.rows,
     });
-
   } catch (error) {
-
     console.error(error);
 
     res.status(500).json({
       success: false,
       message: error.message,
     });
-
   }
 };
 
-export const getRecruiterCompany = async (
-  req,
-  res
-) => {
+export const getRecruiterCompany = async (req, res) => {
   try {
     const { recruiterId } = req.params;
 
@@ -426,10 +419,17 @@ export const getRecruiterCompany = async (
       `
       SELECT
         c.company_name,
-        c.website
+        c.website,
+        c.logo_url,
+        c.industry,
+        c.location,
+        c.description
+
       FROM "Recruiters" r
+
       INNER JOIN "Company" c
       ON r.company_id = c.comp_id
+
       WHERE r.id = $1
       `,
       [recruiterId]

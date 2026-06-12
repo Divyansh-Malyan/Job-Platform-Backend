@@ -7,6 +7,12 @@ import studentRoutes from "./routes/studentRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import savedJobRoutes from "./routes/savedJobRoutes.js";
+import recruiterRoutes from "./routes/recruiterRoutes.js";
+import companyRoutes from "./routes/companyRoutes.js";
+
+
+
+
 
 const app = express();
 
@@ -19,6 +25,11 @@ app.use("/students", studentRoutes);
 app.use("/dashboard", dashboardRoutes);
 app.use("/notifications", notificationRoutes);
 app.use("/saved-jobs", savedJobRoutes);
+app.use("/recruiters", recruiterRoutes);
+app.use("/companies", companyRoutes);
+
+
+
 
 
 app.get("/", async (req, res) => {

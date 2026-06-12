@@ -5,7 +5,6 @@ export const getStudentById = async (req, res) => {
 
     const { studentId } = req.params;
 
-    console.log("Student ID:", studentId);
 
     const studentResult = await pool.query(
       `
@@ -25,7 +24,6 @@ export const getStudentById = async (req, res) => {
 
     const student = studentResult.rows[0];
 
-    console.log("Student Row:", student);
 
     const skillsResult = await pool.query(
       `
@@ -36,7 +34,6 @@ export const getStudentById = async (req, res) => {
       [student.user_student_id]
     );
 
-    console.log("Skills fetched");
 
     const projectsResult = await pool.query(
       `
@@ -47,7 +44,6 @@ export const getStudentById = async (req, res) => {
       [student.user_student_id]
     );
 
-    console.log("Projects fetched");
 
     const experienceResult = await pool.query(
       `
@@ -58,7 +54,6 @@ export const getStudentById = async (req, res) => {
       [student.user_student_id]
     );
 
-    console.log("Experience fetched");
 
     const emailResult = await pool.query(
       `
@@ -69,7 +64,6 @@ export const getStudentById = async (req, res) => {
       [student.user_student_id]
     );
 
-    console.log("Email fetched");
 
     return res.status(200).json({
       success: true,
@@ -174,8 +168,6 @@ export const updateStudentProfile = async (
     const { userId } = req.params;
 
     const data = req.body;
-    console.log("PHOTO URL:", data.profilePhotoUrl);
-    console.log("RESUME URL:", data.resumeUrl);
 
     // ---------------- STUDENT INFO ----------------
 
@@ -239,15 +231,7 @@ export const updateStudentProfile = async (
       [userId]
     );
 
-    console.log(
-      "Updated URLs:",
-      updatedStudent.rows[0]
-    );
-
     // ---------------- SKILLS ----------------
-
-    console.log("Projects Received:");
-    console.log(data.projects);
     await pool.query(
       `
       DELETE FROM "Student_Skills"
