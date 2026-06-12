@@ -17,7 +17,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",
-      "https://your-app.vercel.app"
+      "https://job-platform-plum.vercel.app"
     ],
     credentials: true,
   })
