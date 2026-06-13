@@ -141,30 +141,61 @@ export const checkApplication = async (req, res) => {
         [status, applicationId]
       );
   
+      // Fetch Job + Company Details
+  
+      const jobResult = await pool.query(
+        `
+        SELECT
+          jp.role,
+          c.company_name
+        FROM "Job_Posting" jp
+        JOIN "Company" c
+          ON jp.comp_id = c.comp_id
+        WHERE jp.id = $1
+        `,
+        [application.job_id]
+      );
+  
+      const role =
+        jobResult.rows[0]?.role || "the position";
+  
+      const companyName =
+        jobResult.rows[0]?.company_name || "the company";
+  
       // Create Notification
   
       let title = "";
       let message = "";
   
       if (status === "Accepted") {
+  
         title = "Application Accepted";
+  
         message =
-          "Congratulations! Your application has been accepted.";
+          `Congratulations! ${companyName} accepted your application for ${role}.`;
+  
       }
   
       if (status === "Rejected") {
+  
         title = "Application Rejected";
+  
         message =
-          "Your application was not selected.";
+          `${companyName} did not move forward with your application for ${role}.`;
+  
       }
   
       if (status === "Shortlisted") {
+  
         title = "Application Shortlisted";
+  
         message =
-          "Your profile has been shortlisted by the recruiter.";
+          `${companyName} shortlisted you for ${role}.`;
+  
       }
   
       if (title) {
+  
         await pool.query(
           `
           INSERT INTO "Notifications"
@@ -181,6 +212,7 @@ export const checkApplication = async (req, res) => {
             message
           ]
         );
+  
       }
   
       res.status(200).json({
